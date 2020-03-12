@@ -34,7 +34,8 @@ class UnsplashPhotoPickerViewController: UIViewController {
     }()
 
     private lazy var searchController: UISearchController = {
-        let searchController = UISearchController(searchResultsController: nil)
+        let searchController = UnsplashSearchController(searchResultsController: nil)
+        searchController.delegate = self
         searchController.obscuresBackgroundDuringPresentation = false
         searchController.hidesNavigationBarDuringPresentation = false
         searchController.searchBar.delegate = self
@@ -51,11 +52,10 @@ class UnsplashPhotoPickerViewController: UIViewController {
         collectionView.dataSource = self
         collectionView.delegate = self
         collectionView.register(PhotoCell.self, forCellWithReuseIdentifier: PhotoCell.reuseIdentifier)
-        collectionView.register(PagingView.self, forSupplementaryViewOfKind: UICollectionView.elementKindSectionFooter, withReuseIdentifier:
-            PagingView.reuseIdentifier)
+        collectionView.register(PagingView.self, forSupplementaryViewOfKind: UICollectionView.elementKindSectionFooter, withReuseIdentifier: PagingView.reuseIdentifier)
         collectionView.contentInsetAdjustmentBehavior = .automatic
         collectionView.layoutMargins = UIEdgeInsets(top: 0.0, left: 16.0, bottom: 0.0, right: 16.0)
-        collectionView.backgroundColor = .white
+        collectionView.backgroundColor = UIColor.photoPicker.background
         collectionView.allowsMultipleSelection = Configuration.shared.allowsMultipleSelection
         return collectionView
     }()
@@ -86,6 +86,7 @@ class UnsplashPhotoPickerViewController: UIViewController {
 
     private let editorialDataSource = PhotosDataSourceFactory.collection(identifier: Configuration.shared.editorialCollectionId).dataSource
 
+    private var previewingContext: UIViewControllerPreviewing?
     private var searchText: String?
 
     weak var delegate: UnsplashPhotoPickerViewControllerDelegate?
@@ -109,13 +110,16 @@ class UnsplashPhotoPickerViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        view.backgroundColor = .white
+        view.backgroundColor = UIColor.photoPicker.background
         setupNotifications()
         setupNavigationBar()
         setupSearchController()
         setupCollectionView()
         setupSpinner()
         setupPeekAndPop()
+
+        let trimmedQuery = Configuration.shared.query?.trimmingCharacters(in: .whitespacesAndNewlines)
+        setSearchText(trimmedQuery)
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -123,8 +127,6 @@ class UnsplashPhotoPickerViewController: UIViewController {
 
         if dataSource.items.count == 0 {
             refresh()
-        } else {
-            reloadData()
         }
     }
 
@@ -161,6 +163,9 @@ class UnsplashPhotoPickerViewController: UIViewController {
     }
 
     private func setupSearchController() {
+        let trimmedQuery = Configuration.shared.query?.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let query = trimmedQuery, query.isEmpty == false { return }
+
         navigationItem.searchController = searchController
         navigationItem.hidesSearchBarWhenScrolling = false
         definesPresentationContext = true
@@ -188,7 +193,7 @@ class UnsplashPhotoPickerViewController: UIViewController {
     }
 
     private func setupPeekAndPop() {
-        registerForPreviewing(with: self, sourceView: collectionView)
+        previewingContext = registerForPreviewing(with: self, sourceView: collectionView)
     }
 
     private func showEmptyView(with state: EmptyViewState) {
@@ -243,10 +248,21 @@ class UnsplashPhotoPickerViewController: UIViewController {
     }
 
     private func scrollToTop() {
-        collectionView.setContentOffset(.zero, animated: false)
+        let contentOffset = CGPoint(x: 0, y: -collectionView.safeAreaInsets.top)
+        collectionView.setContentOffset(contentOffset, animated: false)
     }
 
     // MARK: - Data
+
+    private func setSearchText(_ text: String?) {
+        if let text = text, text.isEmpty == false {
+            dataSource = PhotosDataSourceFactory.search(query: text).dataSource
+            searchText = text
+        } else {
+            dataSource = editorialDataSource
+            searchText = nil
+        }
+    }
 
     @objc func refresh() {
         guard dataSource.items.isEmpty else { return }
@@ -300,29 +316,55 @@ class UnsplashPhotoPickerViewController: UIViewController {
 
 }
 
+// MARK: - UISearchControllerDelegate
+extension UnsplashPhotoPickerViewController: UISearchControllerDelegate {
+    func didPresentSearchController(_ searchController: UISearchController) {
+        if let context = previewingContext {
+            unregisterForPreviewing(withContext: context)
+            previewingContext = searchController.registerForPreviewing(with: self, sourceView: collectionView)
+        }
+    }
+
+    func didDismissSearchController(_ searchController: UISearchController) {
+        if let context = previewingContext {
+            searchController.unregisterForPreviewing(withContext: context)
+            previewingContext = registerForPreviewing(with: self, sourceView: collectionView)
+        }
+    }
+}
+
 // MARK: - UISearchBarDelegate
 extension UnsplashPhotoPickerViewController: UISearchBarDelegate {
     func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
         guard let text = searchBar.text else { return }
 
-        dataSource = PhotosDataSourceFactory.search(query: text).dataSource
-        searchText = text
+        setSearchText(text)
         refresh()
         scrollToTop()
         hideEmptyView()
+        updateTitle()
         updateDoneButtonState()
     }
 
-    func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
-        guard searchText != nil else { return }
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        guard self.searchText != nil && searchText.isEmpty else { return }
 
-        dataSource = editorialDataSource
-        searchText = nil
+        setSearchText(nil)
         refresh()
         reloadData()
         scrollToTop()
         hideEmptyView()
+        updateTitle()
         updateDoneButtonState()
+    }
+}
+
+// MARK: - UIScrollViewDelegate
+extension UnsplashPhotoPickerViewController: UIScrollViewDelegate {
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        if searchController.searchBar.isFirstResponder {
+            searchController.searchBar.resignFirstResponder()
+        }
     }
 }
 

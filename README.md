@@ -2,12 +2,12 @@
 
 [![CocoaPods Compatible](https://img.shields.io/cocoapods/v/UnsplashPhotoPicker.svg?style=flat-square)](https://cocoapods.org/pods/UnsplashPhotoPicker)
 [![Carthage Compatible](https://img.shields.io/badge/Carthage-compatible-4BC51D.svg?style=flat-square)](https://github.com/Carthage/Carthage)
-[![Platform](https://img.shields.io/cocoapods/p/UnsplashPhotoPicker.svg?style=flat-square)](https://alamofire.github.io/Alamofire)
+[![Platform](https://img.shields.io/cocoapods/p/UnsplashPhotoPicker.svg?style=flat-square)](https://github.com/unsplash/unsplash-photopicker-ios)
 [![License](https://img.shields.io/github/license/unsplash/unsplash-photopicker-ios.svg?style=flat-square)](https://github.com/unsplash/unsplash-photopicker-ios)
 
 UnsplashPhotoPicker is an iOS UI component that allows you to quickly search the Unsplash library for free high-quality photos with just a few lines of code.
 
-Android coming soon.
+Android photo picker [here](https://github.com/unsplash/unsplash-photopicker-android).
 
 ![Unsplash Photo Picker for iOS preview](https://i.imgur.com/BtpxvAP.png "Unsplash Photo Picker for iOS")
 
@@ -32,8 +32,8 @@ UnsplashPhotoPicker is a view controller. You present it to offer your users to 
 ## Requirements
 
 - iOS 11.0+
-- Xcode 10.0+
-- Swift 4.2+
+- Xcode 10.2+
+- Swift 5.0+
 - [Unsplash API Access Key and Secret Key](https://unsplash.com/documentation#registering-your-application)
 
 ⚠️ UnsplashPhotoPicker is not compatible with Objective-C.
@@ -45,7 +45,7 @@ UnsplashPhotoPicker is a view controller. You present it to offer your users to 
 To integrate UnsplashPhotoPicker into your Xcode project using [Carthage](https://github.com/Carthage/Carthage), specify it in your `Cartfile`:
 
 ```ogdl
-github "unsplash/unsplash-photopicker-ios" ~> 1.0
+github "unsplash/unsplash-photopicker-ios" ~> 1.1
 ```
 
 Run `carthage update` to build the framework and drag the built `UnsplashPhotoPicker.framework` into your Xcode project.
@@ -60,7 +60,7 @@ platform :ios, '11.0'
 use_frameworks!
 
 target '<Your Target Name>' do
-    pod 'UnsplashPhotoPicker', '~> 1.0'
+    pod 'UnsplashPhotoPicker', '~> 1.1'
 end
 ```
 
@@ -87,6 +87,7 @@ The `UnsplashPhotoPicker` is configured with an instance of `UnsplashPhotoPicker
 ```swift
 UnsplashPhotoPickerConfiguration(accessKey: String,
                                  secretKey: String,
+                                 query: String,
                                  allowsMultipleSelection: Bool,
                                  memoryCapacity: Int,
                                  diskCapacity: Int)
@@ -95,6 +96,7 @@ UnsplashPhotoPickerConfiguration(accessKey: String,
 |-------------------------------|----------|-------------------|---------|
 | **`accessKey`**               | _String_ | Required          | N/A     |
 | **`secretKey`**               | _String_ | Required          | N/A     |
+| **`query`**                   | _String_ | Optional          | `nil`   |
 | **`allowsMultipleSelection`** | _Bool_   | Optional          | `false` |
 | **`memoryCapacity`**          | _Int_    | Optional          | `50`    |
 | **`diskCapacity`**            | _Int_    | Optional          | `100`   |
@@ -118,7 +120,7 @@ protocol UnsplashPhotoPickerDelegate: class {
 
 MIT License
 
-Copyright (c) 2018 Unsplash Inc.
+Copyright (c) 2018-2019 Unsplash Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
